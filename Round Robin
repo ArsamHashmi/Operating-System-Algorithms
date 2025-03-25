@@ -1,0 +1,88 @@
+import java.util.*;
+
+public class RoundRobin {
+    static class Process {
+        int id, arrival, burst, remaining, waiting, turnaround, completion;
+
+        public Process(int id, int arrival, int burst) {
+            this.id = id;
+            this.arrival = arrival;
+            this.burst = burst;
+            this.remaining = burst;
+        }
+    }
+
+    public static void main(String[] args) {
+        int quantum = 2;
+
+        // Example processes (ID, Arrival Time, Burst Time)
+        Process[] processes = {
+            new Process(1, 0, 5),
+            new Process(2, 1, 3),
+            new Process(3, 2, 8),
+            new Process(4, 3, 6)
+        };
+
+        roundRobin(processes, quantum);
+    }
+
+    static void roundRobin(Process[] processes, int quantum) {
+        int time = 0;
+        Queue<Process> queue = new LinkedList<>();
+        List<String> gantt = new ArrayList<>();
+        int completed = 0;
+        int n = processes.length;
+
+        Arrays.sort(processes, Comparator.comparingInt(p -> p.arrival));
+        int i = 0;
+
+        while (completed < n) {
+            // Add newly arrived processes
+            while (i < n && processes[i].arrival <= time) {
+                queue.add(processes[i]);
+                i++;
+            }
+
+            if (queue.isEmpty()) {
+                gantt.add("Idle");
+                time++;
+                continue;
+            }
+
+            Process current = queue.poll();
+            gantt.add("P" + current.id);
+
+            int execTime = Math.min(current.remaining, quantum);
+            time += execTime;
+            current.remaining -= execTime;
+
+            // Add newly arrived during execution
+            while (i < n && processes[i].arrival <= time) {
+                queue.add(processes[i]);
+                i++;
+            }
+
+            if (current.remaining > 0) {
+                queue.add(current);
+            } else {
+                current.completion = time;
+                current.turnaround = current.completion - current.arrival;
+                current.waiting = current.turnaround - current.burst;
+                completed++;
+            }
+        }
+
+        // Output
+        System.out.println("Process\tArrival\tBurst\tWaiting\tTurnaround\tCompletion");
+        for (Process p : processes) {
+            System.out.printf("P%d\t\t%d\t%d\t%d\t%d\t\t%d\n",
+                    p.id, p.arrival, p.burst, p.waiting, p.turnaround, p.completion);
+        }
+
+        System.out.println("\nGantt Chart:");
+        for (String g : gantt) {
+            System.out.print("| " + g + " ");
+        }
+        System.out.println("|");
+    }
+}
